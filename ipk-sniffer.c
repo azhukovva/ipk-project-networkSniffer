@@ -24,6 +24,11 @@
 
 #define FILTER_LENGTH 8
 
+enum protocol_t {
+    TCP, UDP, ICMP4, ICMP6,
+    ARP, NDP, IGMP, MLD
+};
+
 struct args_t {
     // interface to sniff
     char interface[MAX_BUFF];
@@ -83,6 +88,83 @@ void handle_signal() {
     exit(EXIT_SUCCESS);
 }
 
+void generate_filter_expr(char* expr, struct args_t* args) {
+    char result[MAX_BUFF] = { 0 };
+
+    const char* apply_filter[] = {
+        [TCP] = "tcp",
+        [UDP] = "udp",
+        [ICMP4] = "icmp",
+        [ICMP6] = "icmp6",
+        [ARP] = "arp",
+        [NDP] = "(icmp6 and icmp6[0] >= 133 and icmp6 and icmp6[0] <= 136)",
+        [IGMP] = "igmp",
+        [MLD] = "(icmp6 and icmp6[0] >= 130 and icmp6[0] <= 132)"
+    };
+
+    int filters_enabled[FILTER_LENGTH] = {
+        args->is_tcp,
+        args->is_udp,
+        args->is_icmp4,
+        args->is_icmp6,
+        args->is_arp,
+        args->is_ndp,
+        args->is_igmp,
+        args->is_mld
+    };
+
+    for (int i = 0; i < FILTER_LENGTH; i++) {
+        char buff[FILTER_SIZE] = { 0 };
+        if (filters_enabled[i]) {
+
+            switch (i) {
+            case TCP: 
+            case UDP:
+                if (args->src_port == 0 && args->dest_port == 0) {
+                    sprintf(buff, (strlen(result) > 0 ? " or %s" : "%s"), apply_filter[i]);
+                }
+                else if(args->src_port && args->dest_port == 0){
+                    sprintf(buff, (strlen(result) > 0 ? " or (%s src port %d)" : "(%s src port %d)"), apply_filter[i], args->src_port);
+                } else if (args->dest_port && args->src_port == 0){
+                    sprintf(buff, (strlen(result) > 0 ? " or (%s dst port %d)" : "(%s dst port %d)"), apply_filter[i], args->dest_port);
+                } else {
+                    sprintf(buff, (strlen(result) > 0 ? " or (%s (src port %d and dst port %d))" : "(%s (src port %d and dst port %d))"), apply_filter[i], args->src_port, args->dest_port);
+                }
+                break;
+            case ICMP4: case ICMP6:
+            case ARP: case IGMP:
+            case NDP: case MLD:
+                sprintf(buff, (strlen(result) > 0 ? " or %s" : "%s"), apply_filter[i]);
+                break;
+            }
+            strcat(result, buff);
+        }
+    }
+
+    sprintf(expr, strlen(result) > 0 ? "(%s)" : "", result);
+}
+
+void set_timestamp(char* dest, const struct pcap_pkthdr* header) {
+    char buffer[MAX_BUFF] = {0};
+    char timestamp[40] = {0};
+    struct tm* time = localtime(&header->ts.tv_sec);
+    strftime(timestamp, 30, "%Y-%m-%dT%H:%M:%S", time);
+    sprintf(buffer, "%s.%03ld%+03ld:%02ld", timestamp, header->ts.tv_usec / 1000, time->tm_gmtoff / 3600,
+            labs(time->tm_gmtoff % 3600) / 60);
+    strcpy(dest, buffer);
+}
+
+void print_hex(char* dest, uint8_t* bytes) {
+    char hex[MAC_LENGTH] = { 0 };
+    for (int i = 0; i < HEX_SIZE; i++) {
+        char hh[4] = { 0 };
+
+        sprintf(hh, (i < HEX_SIZE - 1 ? "%02x:" : "%02x"), bytes[i]);
+        strcat(hex, hh);
+    }
+    strcpy(dest, hex); //
+}
+
 void print_packet(const unsigned char* packet, int len) {
     int i, j, cols;
     for (i = 0; i < len; i += 16) {
@@ -105,7 +187,6 @@ void print_packet(const unsigned char* packet, int len) {
 
 void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const unsigned char* packet) {
 
-    
 }
 
 pcap_if_t* get_network_interfaces() {
@@ -213,6 +294,13 @@ int main(int argc, char** argv) {
         }
     }
 
-    
+    globals.alldevsp = get_network_interfaces();
+
+    char filter_expr[FILTER_SIZE] = { 0 };  // filter expr buffer
+    char errbuf[ERRBUF_SIZE] = { 0 };       // error buffer
+
+    generate_filter_expr(filter_expr, &args);
+
+    cleanup();
     return 0;
 }
