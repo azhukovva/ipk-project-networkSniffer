@@ -244,6 +244,15 @@ void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const 
         // Other protocols do not have any port number
         break;
     }
+    case ETHERTYPE_ARP: {
+        struct ether_arp* arp_header = (struct ether_arp*)(packet + ETHER_SIZE);        //arp header
+
+        inet_ntop(AF_INET, &arp_header->arp_spa, src_ip, MAX_BUFF);
+        inet_ntop(AF_INET, &arp_header->arp_tpa, dst_ip, MAX_BUFF);
+
+        printf("src IP: %s\ndst IP: %s\n", src_ip, dst_ip);
+        break;
+    }
     }
     print_packet(packet, header->caplen);
     printf("\n");
