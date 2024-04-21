@@ -18,6 +18,12 @@
 #define FILTER_SIZE MAX_BUFF*4
 #define ERRBUF_SIZE MAX_BUFF/4
 
+#define MAC_LENGTH 18
+#define ETHER_SIZE 14
+#define HEX_SIZE 6
+
+#define FILTER_LENGTH 8
+
 struct args_t {
     // interface to sniff
     char interface[MAX_BUFF];
@@ -65,6 +71,16 @@ void error(const char* message, ...) {
     vfprintf(stderr, message, args);
     va_end(args);
     exit(EXIT_FAILURE);
+}
+
+void cleanup() {
+    pcap_freealldevs(globals.alldevsp);
+    pcap_close(globals.handle);
+}
+
+void handle_signal() {
+    cleanup();
+    exit(EXIT_SUCCESS);
 }
 
 void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const unsigned char* packet) {
