@@ -206,7 +206,24 @@ void print_packet(const unsigned char* packet, int len) {
 }
 
 void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const unsigned char* packet) {
+
+    struct ether_header* eth_header = (struct ether_header*)packet; 
+
+    char src_dst_addr[MAC_LENGTH] = { 0 };   
+    char timestamp[MAX_BUFF] = { 0 };         
+    char src_ip[MAX_BUFF] = { 0 };             
+    char dst_ip[MAX_BUFF] = { 0 };            
+
+    set_timestamp(timestamp, header);
+    printf("timestamp: %s\n", timestamp);
+    print_hex(src_dst_addr, eth_header->ether_shost);
+    printf("src MAC: %s\n", src_dst_addr);
+    print_hex(src_dst_addr, eth_header->ether_dhost);
+    printf("dst MAC: %s\n", src_dst_addr);
+    printf("frame length: %d bytes\n", header->caplen);
+
     
+    print_packet(packet, header->caplen);
 }
 
 pcap_if_t* get_network_interfaces() {
