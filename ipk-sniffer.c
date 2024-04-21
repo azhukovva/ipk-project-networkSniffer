@@ -207,7 +207,7 @@ void print_packet(const unsigned char* packet, int len) {
 
 void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const unsigned char* packet) {
 
-    struct ether_header* eth_header = (struct ether_header*)packet; 
+    struct ether_header* eth_header = (struct ether_header*)packet;
 
     char src_dst_addr[MAC_LENGTH] = { 0 };   
     char timestamp[MAX_BUFF] = { 0 };         
@@ -222,8 +222,31 @@ void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const 
     printf("dst MAC: %s\n", src_dst_addr);
     printf("frame length: %d bytes\n", header->caplen);
 
-    
+    switch (ntohs(eth_header->ether_type)) {
+    case ETHERTYPE_IP: {        
+
+        struct ip* ip_header = (struct ip*)(packet + ETHER_SIZE);      
+
+        inet_ntop(AF_INET, &ip_header->ip_src.s_addr, src_ip, MAX_BUFF);
+        inet_ntop(AF_INET, &ip_header->ip_dst.s_addr, dst_ip, MAX_BUFF);
+
+        printf("src IP: %s\ndst IP: %s\n", src_ip, dst_ip);
+
+        if (ip_header->ip_p == IPPROTO_TCP) {
+            struct tcphdr* tcp_header = (struct tcphdr*)(packet + ETHER_SIZE + sizeof(struct ip));      //tcp header
+            printf("src PORT: %d\ndst PORT: %d\n", ntohs(tcp_header->th_sport), ntohs(tcp_header->th_dport));
+        }
+        else if (ip_header->ip_p == IPPROTO_UDP) {
+            struct udphdr* udp_header = (struct udphdr*)(packet + ETHER_SIZE + sizeof(struct ip));      //udp header
+            printf("src PORT: %d\ndst PORT: %d\n", ntohs(udp_header->uh_sport), ntohs(udp_header->uh_dport));
+        }
+
+        // Other protocols do not have any port number
+        break;
+    }
+    }
     print_packet(packet, header->caplen);
+    printf("\n");
 }
 
 pcap_if_t* get_network_interfaces() {
