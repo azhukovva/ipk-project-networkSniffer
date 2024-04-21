@@ -83,6 +83,26 @@ void handle_signal() {
     exit(EXIT_SUCCESS);
 }
 
+void print_packet(const unsigned char* packet, int len) {
+    int i, j, cols;
+    for (i = 0; i < len; i += 16) {
+        printf("\n0x%04x:", i);
+
+        cols = i + 16;
+
+        for (j = i; j < cols; j++) {
+            if (j < len)
+                printf(" %02x", packet[j]);
+            else
+                printf("   ");
+        }
+        printf(" ");
+        for (j = i; cols < len ? j < cols : j < len; j++)
+            printf("%c", isprint(packet[j]) ? packet[j] : '.');
+    }
+    printf("\n");
+}
+
 void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const unsigned char* packet) {
 
     
