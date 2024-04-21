@@ -1,0 +1,11 @@
+{
+    "in": "some",
+    "out": "raw/tcp",
+    "err": "some",
+    "mode": "--tcp",
+    "host": "192.168.0.1",
+    "port": 8989,
+    "interface": "en0",
+    "code": 1,
+    "n": 1
+}
