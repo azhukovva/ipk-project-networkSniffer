@@ -253,6 +253,15 @@ void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const 
         printf("src IP: %s\ndst IP: %s\n", src_ip, dst_ip);
         break;
     }
+    case ETHERTYPE_IPV6: {
+        struct ip6_hdr* ip6_header = (struct ip6_hdr*)(packet + ETHER_SIZE);        //ipv6 header
+
+        inet_ntop(AF_INET6, &ip6_header->ip6_src, src_ip, INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, &ip6_header->ip6_dst, dst_ip, INET6_ADDRSTRLEN);
+
+        printf("src IP: %s\ndst IP: %s\n", src_ip, dst_ip);
+        break;
+    }
     }
     print_packet(packet, header->caplen);
     printf("\n");
