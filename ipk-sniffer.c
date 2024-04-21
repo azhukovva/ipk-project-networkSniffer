@@ -113,6 +113,15 @@ void generate_filter_expr(char* expr, struct args_t* args) {
         args->is_mld
     };
 
+    int has_filters = 0;
+    for(int i = 0; i < FILTER_LENGTH; i++){
+        has_filters = filters_enabled[i];
+
+        if(has_filters){
+            break;
+        }  
+    }
+
     for (int i = 0; i < FILTER_LENGTH; i++) {
         char buff[FILTER_SIZE] = { 0 };
         if (filters_enabled[i]) {
@@ -139,6 +148,17 @@ void generate_filter_expr(char* expr, struct args_t* args) {
             }
             strcat(result, buff);
         }
+    }
+    if(!has_filters && (args->src_port || args->dest_port)){
+        char buff[FILTER_SIZE] = { 0 };
+        if(args->src_port && args->dest_port == 0){
+            sprintf(buff, "src port %d", args->src_port);
+        } else if (args->dest_port && args->src_port == 0){
+            sprintf(buff, "dst port %d", args->dest_port);
+        } else {
+            sprintf(buff, "(src port %d and dst port %d)", args->src_port, args->dest_port);
+        }
+        strcat(result, buff);
     }
 
     sprintf(expr, strlen(result) > 0 ? "(%s)" : "", result);
