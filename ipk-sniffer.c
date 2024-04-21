@@ -206,7 +206,7 @@ void print_packet(const unsigned char* packet, int len) {
 }
 
 void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const unsigned char* packet) {
-
+    
 }
 
 pcap_if_t* get_network_interfaces() {
@@ -320,6 +320,31 @@ int main(int argc, char** argv) {
     char errbuf[ERRBUF_SIZE] = { 0 };       // error buffer
 
     generate_filter_expr(filter_expr, &args);
+
+    struct bpf_program filter;
+    bpf_u_int32 mask;
+    bpf_u_int32 net;
+
+    if (pcap_lookupnet(args.interface, &net, &mask, errbuf)) {
+        cleanup();
+        error("Can't get netmask for device: %s", errbuf);
+    }
+
+    globals.handle = pcap_open_live(args.interface, BUFSIZ, 1, 1, errbuf);
+    if (globals.handle == NULL) {
+        cleanup();
+        error("Unable to open device: %s", errbuf);
+    }
+
+    if (pcap_compile(globals.handle, &filter, filter_expr, 0, net) == -1) {
+        cleanup();
+        error("Unable to compile filter expression: %s", pcap_geterr(globals.handle));
+    }
+
+    if (pcap_setfilter(globals.handle, &filter) == -1) {
+        cleanup();
+        error("Unable to set filters: %s", pcap_geterr(globals.handle));
+    }
 
     cleanup();
     return 0;
