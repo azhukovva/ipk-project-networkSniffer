@@ -25,8 +25,10 @@
 #define FILTER_LENGTH 8
 
 enum protocol_t {
-    TCP, UDP, ICMP4, ICMP6,
-    ARP, NDP, IGMP, MLD
+    TCP, UDP,
+    ARP, NDP, 
+    IGMP, MLD,
+    ICMP4, ICMP6,
 };
 
 struct args_t {
@@ -55,6 +57,9 @@ struct globals_t {
 
 struct globals_t globals;
 
+/**
+ * @brief Reset args
+ */
 void reset_args(struct args_t *args) {
     memset(args->interface, 0, sizeof(args->interface));
     args->src_port = 0;
@@ -70,6 +75,9 @@ void reset_args(struct args_t *args) {
     args->n = 1;
 }
 
+/**
+ * @brief Error print
+ */
 void error(const char* message, ...) {
     va_list args;
     va_start(args, message);
@@ -78,16 +86,30 @@ void error(const char* message, ...) {
     exit(EXIT_FAILURE);
 }
 
+/**
+ * @brief clenup for global variables
+ */
 void cleanup() {
     pcap_freealldevs(globals.alldevsp);
     pcap_close(globals.handle);
 }
 
+/**
+ * @brief CTRL + C handler
+ */
 void handle_signal() {
     cleanup();
     exit(EXIT_SUCCESS);
 }
 
+/**
+ * @brief Generates a filter expression based on the provided arguments.
+ *
+ * @param expr Pointer to the destination buffer where the filter expression will be stored.
+ * @param args Pointer to the arguments containing protocol type flags and optional port numbers.
+ * 
+ * @return void
+ */
 void generate_filter_expr(char* expr, struct args_t* args) {
     char result[MAX_BUFF] = { 0 };
 
@@ -164,6 +186,14 @@ void generate_filter_expr(char* expr, struct args_t* args) {
     sprintf(expr, strlen(result) > 0 ? "(%s)" : "", result);
 }
 
+/**
+ * @brief Sets the timestamp string based on the packet header information.
+ *
+ * @param dest Pointer to the destination buffer where the timestamp string will be stored.
+ * @param header Pointer to the packet header containing timestamp information.
+ * 
+ * @return void
+ */
 void set_timestamp(char* dest, const struct pcap_pkthdr* header) {
     char buffer[MAX_BUFF] = {0};
     char timestamp[40] = {0};
@@ -174,6 +204,14 @@ void set_timestamp(char* dest, const struct pcap_pkthdr* header) {
     strcpy(dest, buffer);
 }
 
+/**
+ * @brief Converts an array of bytes into a hexadecimal string representation.
+ *
+ * @param dest Pointer to the destination buffer where the hexadecimal string will be stored.
+ * @param bytes Pointer to the array of bytes to be converted.
+ * 
+ * @return void
+ */
 void print_hex(char* dest, uint8_t* bytes) {
     char hex[MAC_LENGTH] = { 0 };
     for (int i = 0; i < HEX_SIZE; i++) {
@@ -185,6 +223,14 @@ void print_hex(char* dest, uint8_t* bytes) {
     strcpy(dest, hex); //
 }
 
+/**
+ * @brief Prints the content of a packet in hexadecimal and ASCII format.
+ *
+ * @param packet Pointer to the packet data.
+ * @param len Length of the packet data, in bytes.
+ * 
+ * @return void
+ */
 void print_packet(const unsigned char* packet, int len) {
     int i, j, cols;
     for (i = 0; i < len; i += 16) {
@@ -205,6 +251,15 @@ void print_packet(const unsigned char* packet, int len) {
     printf("\n");
 }
 
+/**
+ * @brief Handles a captured network packet.
+ * 
+ * @param args Unused argument. Can be NULL.
+ * @param header Pointer to the packet header containing metadata like timestamp and packet length.
+ * @param packet Pointer to the captured packet data.
+ * 
+ * @return void
+ */
 void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const unsigned char* packet) {
 
     struct ether_header* eth_header = (struct ether_header*)packet;
@@ -267,6 +322,11 @@ void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const 
     printf("\n");
 }
 
+/**
+ * @brief Retrieves a list of network interfaces available on the system.
+ *
+ * @return A pointer to the first element of the list of network interfaces
+ */
 pcap_if_t* get_network_interfaces() {
     pcap_if_t* list = NULL;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -279,6 +339,11 @@ pcap_if_t* get_network_interfaces() {
     return list;
 }
 
+/**
+ * @brief Prints information about network interfaces available on the system.
+ *
+ * @return void
+ */
 void print_network_interfaces() {
     pcap_if_t* item = get_network_interfaces();
 
