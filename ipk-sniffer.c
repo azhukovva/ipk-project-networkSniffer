@@ -346,6 +346,12 @@ int main(int argc, char** argv) {
         error("Unable to set filters: %s", pcap_geterr(globals.handle));
     }
 
+    int loop = pcap_loop(globals.handle, args.n, handle_packet, (unsigned char*)NULL);
+    if (loop < 0) {
+        cleanup();
+        error("Pcap loop failed: %s", pcap_geterr(globals.handle));
+    }
+
     cleanup();
     return 0;
 }
