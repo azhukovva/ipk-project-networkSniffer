@@ -26,3 +26,6 @@ if only `-i/--interface` is specified without a value (and any other parameters 
 `-p`, `--port` <port>: Filter packets based on the specified port
 `--tcp`, `--udp` `--arp`, `--icmp4`, `--icmp6`: Enable filtering for specific protocols
 `-n` <number>: Specify the number of packets to capture
+
+### 💅 Testing 
+The program was tested using python tester that can generate packets of various types and send it over the network (see folder "tests").
