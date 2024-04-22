@@ -282,9 +282,9 @@ void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const 
     printf("frame length: %d bytes\n", header->caplen);
 
     switch (ntohs(eth_header->ether_type)) {
-    case ETHERTYPE_IP: {        
+    case ETHERTYPE_IP: {       
 
-        struct ip* ip_header = (struct ip*)(packet + ETHER_SIZE);      
+        struct ip* ip_header = (struct ip*)(packet + ETHER_SIZE);       // ipv4 header
 
         inet_ntop(AF_INET, &ip_header->ip_src.s_addr, src_ip, MAX_BUFF);
         inet_ntop(AF_INET, &ip_header->ip_dst.s_addr, dst_ip, MAX_BUFF);
@@ -293,11 +293,11 @@ void handle_packet(unsigned char* args, const struct pcap_pkthdr* header, const 
 
         if (ip_header->ip_p == IPPROTO_TCP) {
             struct tcphdr* tcp_header = (struct tcphdr*)(packet + ETHER_SIZE + sizeof(struct ip));      //tcp header
-            printf("src PORT: %d\ndst PORT: %d\n", ntohs(tcp_header->th_sport), ntohs(tcp_header->th_dport));
+            printf("src port: %d\ndst port: %d\n", ntohs(tcp_header->th_sport), ntohs(tcp_header->th_dport));
         }
         else if (ip_header->ip_p == IPPROTO_UDP) {
             struct udphdr* udp_header = (struct udphdr*)(packet + ETHER_SIZE + sizeof(struct ip));      //udp header
-            printf("src PORT: %d\ndst PORT: %d\n", ntohs(udp_header->uh_sport), ntohs(udp_header->uh_dport));
+            printf("src port: %d\ndst port: %d\n", ntohs(udp_header->uh_sport), ntohs(udp_header->uh_dport));
         }
 
         // Other protocols do not have any port number
@@ -351,9 +351,9 @@ pcap_if_t* get_network_interfaces() {
 void print_network_interfaces() {
     pcap_if_t* item = get_network_interfaces();
 
-    printf("Interface\tDescription\n");
+    printf("Interface:\n");
     while (item) {
-        printf("%s\t%s\n", item->name, item->description);
+        printf("%s\n", item->name);
         item = item->next;
     }
 
@@ -389,7 +389,7 @@ int main(int argc, char** argv) {
             i++;
         } else if (strcmp(opt, "-p") == 0) {
             if(arg == NULL){
-                error("Port is missing");
+                error("Port is missing\n");
             }
 
             args.dest_port = atoi(arg);
@@ -398,7 +398,7 @@ int main(int argc, char** argv) {
             i++;
         } else if (strcmp(opt, "--port-source") == 0) {
             if(arg == NULL){
-                error("Port is missing");
+                error("Port is missing\n");
             }
 
             args.src_port = atoi(arg);
@@ -406,7 +406,7 @@ int main(int argc, char** argv) {
             i++;
         } else if (strcmp(opt, "--port-destination") == 0) {
             if(arg == NULL){
-                error("Port is missing");
+                error("Port is missing\n");
             }
 
             args.dest_port = atoi(arg);
@@ -414,7 +414,7 @@ int main(int argc, char** argv) {
             i++;
         } else if (strcmp(opt, "-n") == 0) {
             if(arg == NULL){
-                error("Number of packets is missing");
+                error("Number of packets is missing\n");
             }
 
             args.n = atoi(arg);
@@ -437,7 +437,7 @@ int main(int argc, char** argv) {
         } else if (strcmp(opt, "--mld") == 0) {
             args.is_mld = 1;
         } else {
-            error("Option \"%s\" is unknown", opt);
+            error("Option \"%s\" is unknown\n", opt);
         }
     }
 
@@ -454,29 +454,29 @@ int main(int argc, char** argv) {
 
     if (pcap_lookupnet(args.interface, &net, &mask, errbuf)) {
         cleanup();
-        error("Can't get netmask for device: %s", errbuf);
+        error("Can't get netmask for device: %s\n", errbuf);
     }
 
     globals.handle = pcap_open_live(args.interface, BUFSIZ, 1, 1, errbuf);
     if (globals.handle == NULL) {
         cleanup();
-        error("Unable to open device: %s", errbuf);
+        error("Unable to open device: %s\n", errbuf);
     }
 
     if (pcap_compile(globals.handle, &filter, filter_expr, 0, net) == -1) {
         cleanup();
-        error("Unable to compile filter expression: %s", pcap_geterr(globals.handle));
+        error("Unable to compile filter expression: %s\n", pcap_geterr(globals.handle));
     }
 
     if (pcap_setfilter(globals.handle, &filter) == -1) {
         cleanup();
-        error("Unable to set filters: %s", pcap_geterr(globals.handle));
+        error("Unable to set filters: %s\n", pcap_geterr(globals.handle));
     }
 
     int loop = pcap_loop(globals.handle, args.n, handle_packet, (unsigned char*)NULL);
     if (loop < 0) {
         cleanup();
-        error("Pcap loop failed: %s", pcap_geterr(globals.handle));
+        error("Pcap loop failed: %s\n", pcap_geterr(globals.handle));
     }
 
     cleanup();
